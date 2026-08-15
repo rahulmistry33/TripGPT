@@ -1,0 +1,688 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TripGPT API",
+    "description": "Multi-Agent LangGraph Travel Planning System powered by MCP tools",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/chat": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Chat Turn",
+        "description": "Send a message turn to the trip-gpt multi-agent system.\n\n- Runs Input/Output Guardrails and Multi-Agent Planning.\n- If HITL approval is required, graph halts and returns `awaiting_approval: true`.",
+        "operationId": "chat_turn_api_v1_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/resume": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Resume Turn",
+        "description": "Resume an interrupted graph execution following Human-in-the-Loop (HITL) review.\n\n- Pass `approved: true` to confirm travel options and generate full itinerary.\n- Pass `approved: false` and `feedback` to revise details and re-run planning.",
+        "operationId": "resume_turn_api_v1_chat_resume_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}/threads": {
+      "get": {
+        "tags": [
+          "Threads"
+        ],
+        "summary": "List Threads",
+        "description": "List all trip planning threads belonging to a specific user.\nIdeal for rendering sidebar conversation histories in frontend UIs.",
+        "operationId": "list_threads_api_v1_users__user_id__threads_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ThreadSummary"
+                  },
+                  "title": "Response List Threads Api V1 Users  User Id  Threads Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Threads"
+        ],
+        "summary": "Create Thread",
+        "description": "Create a new trip planning thread for a user.\nReturns the newly created thread summary including thread_id.",
+        "operationId": "create_thread_api_v1_users__user_id__threads_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}/threads/{thread_id}": {
+      "get": {
+        "tags": [
+          "Threads"
+        ],
+        "summary": "Get Thread Detail",
+        "description": "Get full thread details including conversation message history and current extracted trip details.",
+        "operationId": "get_thread_detail_api_v1_users__user_id__threads__thread_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Thread Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Threads"
+        ],
+        "summary": "Delete Thread",
+        "description": "Delete a trip planning thread for a user.",
+        "operationId": "delete_thread_api_v1_users__user_id__threads__thread_id__delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Thread Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Welcome endpoint for API verification.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "Unique identifier for the user (e.g. 'user_123').",
+            "examples": [
+              "user_123"
+            ]
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id",
+            "description": "ID of the trip conversation thread. If omitted, a new thread is created automatically.",
+            "examples": [
+              "trip_abc123"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "The message text from the user.",
+            "examples": [
+              "I want to plan a 5-day trip to Tokyo from Mumbai in October with a $3000 budget for 2 people."
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "message"
+        ],
+        "title": "ChatRequest",
+        "description": "Payload sent by the frontend UI when a user sends a chat message."
+      },
+      "ChatResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User ID for the session."
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id",
+            "description": "Thread ID for the session."
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply",
+            "description": "The assistant's text response."
+          },
+          "trip_details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Trip Details",
+            "description": "Current state of extracted trip details."
+          },
+          "is_complete": {
+            "type": "boolean",
+            "title": "Is Complete",
+            "description": "Whether all required trip fields are extracted and fanned out."
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields",
+            "description": "List of trip fields still required."
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At",
+            "description": "ISO timestamp of this response turn."
+          },
+          "awaiting_approval": {
+            "type": "boolean",
+            "title": "Awaiting Approval",
+            "description": "True if graph is currently paused for human approval (HITL).",
+            "default": false
+          },
+          "guardrail_status": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guardrail Status",
+            "description": "Guardrail validation results."
+          },
+          "summary_for_approval": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary For Approval",
+            "description": "Trip proposal summary awaiting human approval."
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "thread_id",
+          "reply",
+          "trip_details",
+          "is_complete",
+          "missing_fields",
+          "updated_at"
+        ],
+        "title": "ChatResponse",
+        "description": "Payload returned to the frontend UI after an agent execution turn."
+      },
+      "CreateThreadRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Optional title for the trip thread (e.g. 'Tokyo Vacation 2026')."
+          }
+        },
+        "type": "object",
+        "title": "CreateThreadRequest",
+        "description": "Payload for manually creating a new trip conversation thread."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MessageSchema": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "'user' or 'assistant'"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Message text content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "MessageSchema",
+        "description": "Single chat message schema for conversation history."
+      },
+      "ResumeRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User ID for the session.",
+            "examples": [
+              "user_123"
+            ]
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id",
+            "description": "Thread ID of the paused trip conversation.",
+            "examples": [
+              "trip_abc123"
+            ]
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "description": "Set to True to approve options, or False to reject with feedback.",
+            "default": true
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback",
+            "description": "Optional revision instructions if rejected.",
+            "examples": [
+              "Find cheaper hotels under $200/night."
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "thread_id"
+        ],
+        "title": "ResumeRequest",
+        "description": "Payload sent by the user/UI to approve or request revisions during HITL graph interrupt."
+      },
+      "ThreadDetail": {
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "trip_details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Trip Details"
+          },
+          "is_complete": {
+            "type": "boolean",
+            "title": "Is Complete"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageSchema"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thread_id",
+          "user_id",
+          "title",
+          "trip_details",
+          "is_complete",
+          "missing_fields",
+          "messages",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ThreadDetail",
+        "description": "Full detail of a thread including state and message history."
+      },
+      "ThreadSummary": {
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "is_complete": {
+            "type": "boolean",
+            "title": "Is Complete"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thread_id",
+          "user_id",
+          "title",
+          "created_at",
+          "updated_at",
+          "is_complete"
+        ],
+        "title": "ThreadSummary",
+        "description": "Summary of a trip thread for list views in the UI sidebar."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

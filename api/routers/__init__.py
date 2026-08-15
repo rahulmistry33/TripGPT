@@ -1,0 +1,3 @@
+"""
+FastAPI router package.
+"""

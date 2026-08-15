@@ -1,0 +1,21 @@
+fastapi
+uvicorn
+
+langgraph
+langchain
+langchain-groq
+langchain-community
+langchain-tavily
+
+
+pydantic
+pydantic-settings
+
+python-dotenv
+tavily-python
+requests
+
+#for mcp development
+mcp
+langchain-mcp-adapters
+nest_asyncio
