@@ -3,8 +3,9 @@
 ## 1. Project Overview & Environment
 - **Project Name:** `trip-gpt`
 - **Frameworks & Libraries:** Python 3.13, `fastapi`, `uvicorn`, `langchain`, `langgraph`, `langchain-groq`, `pydantic`, `python-dotenv`, `mcp`, `langchain-mcp-adapters`, `aviationstack-mcp`, `nest_asyncio`, `requests`.
-- **Package Runner:** `uv` (Fast Python package manager & runner).
+- **Package Runner & Environment:** `uv` (Fast Python package manager & runner) + Docker Containerization.
 - **Architecture Standard:** 100% Pure Model Context Protocol (MCP) Multi-Server Hybrid Architecture (Remote HTTP + Local Stdio MCP Subprocesses) + Production FastAPI Web Server Layer + LangGraph Guardrails & HITL Subsystems.
+- **Production Cloud Target:** Render Web Service (Docker Environment).
 - **Configured API Keys (`.env`):**
   - `TAVILY_API_KEY`: Web search & travel destination research via Tavily Remote MCP Server (`streamable_http`).
   - `AVIATIONSTACK_API_KEY` / `AVIATION_STACK_API_KEY`: Real-time flight status, schedules, and airport lookup via AviationStack Stdio MCP Server.
@@ -16,13 +17,19 @@
 ```
 trip-gpt/
 ├── .env                        # Environment variables & API keys
-├── pyproject.toml              # Project dependencies & package specs
+├── .env.example                # Template for required API keys
+├── .gitignore                  # Git ignore rules (pycache, env, venv, caches)
+├── .dockerignore               # Docker build ignore rules
+├── Dockerfile                  # Production multi-stage Docker build recipe using Astral UV base image
+├── docker-compose.yml          # Local multi-container development configuration
+├── render.yaml                 # Render Infrastructure-as-Code (IaC) deployment blueprint
+├── pyproject.toml              # Project dependencies & package specs (includes aviationstack-mcp)
 ├── uv.lock                     # UV dependency lock file
 ├── requirements.txt            # Package requirements list
 ├── README.md                   # Complete repository documentation & uv quickstart
 ├── PROJECT_SUMMARY.md          # Comprehensive project summary & progress log
 ├── main.py                     # Interactive CLI runner with multi-turn memory & MCP cleanup
-├── run_server.py               # Production launcher for FastAPI Uvicorn web server
+├── run_server.py               # Production launcher for FastAPI Uvicorn web server (dynamic PORT binding)
 ├── generate_openapi.py         # Script to export openapi.json for Postman import
 ├── openapi.json                # Exported OpenAPI 3.0 specification for 1-click Postman import
 ├── test_fastapi_app.py         # FastAPI endpoint, Guardrails, & HITL verification test suite
@@ -88,14 +95,40 @@ trip-gpt/
   - `DELETE /api/v1/users/{user_id}/threads/{thread_id}`: Deletes user conversation thread.
 
 ### D. Multi-Server MCP Client & Singleton Caching (`tools/mcp_client.py`)
-- 19 total MCP tools across Tavily Remote MCP, AviationStack Stdio MCP, and custom Weather Stdio MCP.
+- 19 total MCP tools across Tavily Remote MCP (`streamable_http`), AviationStack Stdio MCP (`aviationstack-mcp`), and custom Weather Stdio MCP (`mcp_servers.weather_server`).
+
+### E. Containerization & Cloud Deployment Architecture
+- **Astral UV Docker Container (`Dockerfile`)**: Optimized multi-stage build leveraging Docker layer caching by installing locked dependencies (`uv sync --frozen --no-dev`) prior to copying project source code.
+- **Render Dynamic Port Binding**: `run_server.py` listens to host `0.0.0.0` and dynamically reads the `PORT` environment variable provided by Render.
+- **Render Blueprint (`render.yaml`)**: Automated 1-click cloud service provisioning.
 
 ---
 
-## 4. Verification & Live Status
+## 4. Recent DevOps & Deployment Progress
+
+1. **Docker & Containerization Setup:**
+   - Authored production-ready `Dockerfile` using `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`.
+   - Created `docker-compose.yml` for seamless local multi-container testing (`docker compose up --build`).
+   - Created `.dockerignore` to prevent staging temporary files and bytecodes into container context.
+
+2. **Git Cache Cleaning (`__pycache__` Untracking):**
+   - Identified tracked `__pycache__` bytecode files in Git index due to early commits prior to `.gitignore` creation.
+   - Purged all 29 cached `.pyc` files using `git rm --cached` and committed `chore: untrack pycache bytecode files from git`.
+
+3. **Render Cloud Deployment & Stdio Subprocess Bug Resolution:**
+   - Deployed the application to Render Web Services via Docker runtime.
+   - Diagnosed Render runtime error (`No module named aviationstack_mcp`) caused by missing package declaration in container `pyproject.toml`.
+   - Executed `uv add aviationstack-mcp`, synchronizing `pyproject.toml`, `uv.lock`, and `requirements.txt`.
+   - Pushed dependency updates to GitHub master branch, triggering an automated green build on Render.
+
+---
+
+## 5. Verification & Live Status
 - **FastAPI Test Suite (`test_fastapi_app.py`)**: 100% PASS across:
   - Root status and thread CRUD.
   - Input Guardrail rejection of non-travel/harmful queries.
   - Multi-agent parallel research & HITL state interrupt (`awaiting_approval: true`).
   - HITL resume (`POST /api/v1/chat/resume`) -> final itinerary generation with Output Guardrails.
-- **Live OpenAPI Spec (`openapi.json`)**: Updated and ready for Postman import.
+- **Local Docker Suite (`docker-compose.yml`)**: 100% PASS on port `8000`.
+- **Production Render Web Service**: Live & fully operational with auto-deploy on push.
+- **Live OpenAPI Spec (`openapi.json`)**: Exported and ready for Postman import.
