@@ -18,4 +18,5 @@ requests
 #for mcp development
 mcp
 langchain-mcp-adapters
+aviationstack-mcp
 nest_asyncio
