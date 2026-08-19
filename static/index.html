@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripGPT — AI Travel Planner</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f5ff',
+              100: '#e0ebff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#1e1b4b',
+            },
+            dark: {
+              bg: '#090d16',
+              surface: '#111827',
+              panel: '#1f293d',
+              border: '#2e3b52',
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Marked JS for Markdown Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #090d16;
+      color: #f3f4f6;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 1);
+    }
+
+    /* Glassmorphism effects */
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-input {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-input:focus-within {
+      border-color: rgba(99, 102, 241, 0.6);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Markdown output custom styling */
+    .prose-dark {
+      color: #e5e7eb;
+      line-height: 1.7;
+    }
+    .prose-dark h1, .prose-dark h2, .prose-dark h3, .prose-dark h4 {
+      color: #ffffff;
+      font-weight: 700;
+      margin-top: 1.2em;
+      margin-bottom: 0.6em;
+    }
+    .prose-dark h1 { font-size: 1.5rem; }
+    .prose-dark h2 { font-size: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3rem; }
+    .prose-dark h3 { font-size: 1.1rem; }
+    .prose-dark ul { list-style-type: disc; padding-left: 1.4rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    .prose-dark ol { list-style-type: decimal; padding-left: 1.4rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    .prose-dark li { margin-bottom: 0.3rem; }
+    .prose-dark p { margin-bottom: 0.8rem; }
+    .prose-dark p:last-child { margin-bottom: 0; }
+    .prose-dark strong { color: #818cf8; font-weight: 600; }
+    .prose-dark code {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.875em;
+      color: #38bdf8;
+    }
+    .prose-dark blockquote {
+      border-left: 4px solid #6366f1;
+      padding-left: 1rem;
+      color: #9ca3af;
+      font-style: italic;
+      margin: 0.8rem 0;
+    }
+    .prose-dark table {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+    }
+
+    .prose-dark th, .prose-dark td {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+    }
+    .prose-dark th {
+      background: rgba(30, 41, 59, 0.6);
+      color: #f3f4f6;
+    }
+
+    /* Pulse Glow Animations */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow 3s infinite ease-in-out;
+    }
+
+    /* Fade in animation for messages */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fade-in-up {
+      animation: fadeInUp 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-[#090d16] text-gray-100">
+
+  <!-- Header Bar -->
+  <header class="h-16 border-b border-gray-800/80 glass-panel px-5 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <!-- App Icon -->
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+        <i data-lucide="plane-takeoff" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-lg tracking-tight text-white">TripGPT</h1>
+          <span class="px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full">MCP Multi-Agent</span>
+        </div>
+        <p class="text-xs text-gray-400 hidden sm:block">AI Travel Agent • Powered by AviationStack, Tavily & Weather MCP</p>
+      </div>
+    </div>
+
+    <!-- User Profile & Drawer Controls -->
+    <div class="flex items-center gap-3">
+      <!-- User Switcher -->
+      <div class="flex items-center gap-2 bg-gray-900/80 border border-gray-800 rounded-lg px-3 py-1.5 text-xs">
+        <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span class="text-gray-400">User:</span>
+        <input type="text" id="userIdInput" value="demo_user" class="bg-transparent text-white font-medium focus:outline-none w-24 text-xs" title="Click to edit User ID" />
+      </div>
+
+      <!-- Toggle Live State Drawer -->
+      <button id="toggleDrawerBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-medium text-gray-300 transition">
+        <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span class="hidden md:inline">Trip State</span>
+      </button>
+
+      <!-- Status Indicator -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="hidden sm:inline">API Ready</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Sidebar: Conversations / Threads -->
+    <aside id="sidebar" class="w-72 border-r border-gray-800/80 bg-[#0c121e]/90 flex flex-col shrink-0 transition-all duration-300 z-10">
+      
+      <!-- New Chat Button -->
+      <div class="p-4 border-b border-gray-800/60">
+        <button id="newTripBtn" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-sm shadow-lg shadow-indigo-600/25 transition active:scale-[0.98]">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>New Trip Plan</span>
+        </button>
+      </div>
+
+      <!-- Threads List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-1" id="threadsList">
+        <div class="text-xs font-semibold text-gray-400 px-3 py-2 uppercase tracking-wider">Your Travel Threads</div>
+        <!-- Dynamic thread items will be injected here -->
+        <div id="threadsLoading" class="p-4 text-center text-xs text-gray-500">
+          Loading conversation history...
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="p-3 border-t border-gray-800/60 text-[11px] text-gray-400 flex items-center justify-between">
+        <span>FastAPI + LangGraph</span>
+        <span class="text-indigo-400">v1.0.0</span>
+      </div>
+    </aside>
+
+    <!-- Center: Chat Conversation Canvas -->
+    <main class="flex-1 flex flex-col bg-[#090d16] overflow-hidden relative">
+      
+      <!-- Ambient Background Glows -->
+      <div class="absolute top-1/4 left-1/3 w-96 h-96 bg-indigo-600/10 rounded-full filter blur-[120px] pointer-events-none animate-pulse-glow"></div>
+      <div class="absolute bottom-1/3 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full filter blur-[120px] pointer-events-none animate-pulse-glow"></div>
+
+      <!-- Messages Area -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-4xl w-full mx-auto relative z-10">
+        
+        <!-- Welcome Hero View (Displayed when thread has no messages) -->
+        <div id="welcomeView" class="h-full flex flex-col items-center justify-center text-center px-4 my-auto">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-5 border border-indigo-400/30">
+            <i data-lucide="compass" class="w-8 h-8 text-white"></i>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">Where would you like to travel?</h2>
+          <p class="text-gray-400 max-w-md text-sm mb-8">
+            Tell TripGPT your travel vision. Our multi-agent AI system will search flights, hotels, and local weather to build your personalized itinerary.
+          </p>
+
+          <!-- Prompt Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl w-full text-left">
+            
+            <button onclick="usePresetPrompt('Plan a 5-day trip to Tokyo from NYC for 2 people with a $4000 budget.')" class="p-3.5 rounded-xl bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800/80 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 text-indigo-400 font-semibold text-xs mb-1">
+                  <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Tokyo, Japan
+                </div>
+                <div class="text-sm font-medium text-gray-200">5-Day Tokyo Adventure</div>
+              </div>
+              <div class="text-xs text-gray-400 mt-2">NYC departure • $4,000 budget • 2 Travelers</div>
+            </button>
+
+            <button onclick="usePresetPrompt('Plan a 3-day weekend trip to Paris from London for couples.')" class="p-3.5 rounded-xl bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800/80 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 text-rose-400 font-semibold text-xs mb-1">
+                  <i data-lucide="heart" class="w-3.5 h-3.5"></i> Paris, France
+                </div>
+                <div class="text-sm font-medium text-gray-200">Romantic Paris Getaway</div>
+              </div>
+              <div class="text-xs text-gray-400 mt-2">London departure • 3 Days • Couple</div>
+            </button>
+
+            <button onclick="usePresetPrompt('Plan a 7-day tropical vacation to Bali from Singapore under $2500.')" class="p-3.5 rounded-xl bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800/80 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 text-emerald-400 font-semibold text-xs mb-1">
+                  <i data-lucide="palmtree" class="w-3.5 h-3.5"></i> Bali, Indonesia
+                </div>
+                <div class="text-sm font-medium text-gray-200">7 Days Tropical Escape</div>
+              </div>
+              <div class="text-xs text-gray-400 mt-2">Singapore departure • $2,500 budget</div>
+            </button>
+
+            <button onclick="usePresetPrompt('Plan a 4-day historic tour of Rome from Chicago focusing on food and monuments.')" class="p-3.5 rounded-xl bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800/80 hover:border-indigo-500/50 transition group flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 text-amber-400 font-semibold text-xs mb-1">
+                  <i data-lucide="utensils" class="w-3.5 h-3.5"></i> Rome, Italy
+                </div>
+                <div class="text-sm font-medium text-gray-200">Rome History & Cuisine</div>
+              </div>
+              <div class="text-xs text-gray-400 mt-2">Chicago departure • 4 Days • Foodie focus</div>
+            </button>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Typing / Agent Activity Bar -->
+      <div id="activityStatus" class="hidden px-6 py-2 max-w-4xl w-full mx-auto z-10">
+        <div class="flex items-center gap-3 text-xs text-indigo-300 bg-indigo-950/40 border border-indigo-500/30 rounded-lg px-3.5 py-2">
+          <div class="flex space-x-1">
+            <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+            <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+            <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+          </div>
+          <span id="activityStatusText">Multi-agent network researching flights, hotels & weather...</span>
+        </div>
+      </div>
+
+      <!-- Bottom Chat Input Bar -->
+      <div class="p-4 sm:p-6 border-t border-gray-800/80 bg-[#090d16]/95 z-20 shrink-0">
+        <div class="max-w-4xl mx-auto">
+          <form id="chatForm" class="glass-input rounded-2xl p-2.5 transition flex flex-col gap-2">
+            
+            <textarea 
+              id="messageInput" 
+              rows="2"
+              placeholder="Ask TripGPT... (e.g. Plan a 5-day trip to Tokyo from NYC for 2 people with $3000 budget)"
+              class="w-full bg-transparent border-0 text-white placeholder-gray-500 text-sm px-3 py-1.5 focus:outline-none resize-none"
+            ></textarea>
+            
+            <div class="flex items-center justify-between border-t border-gray-800/60 pt-2 px-1">
+              <div class="flex items-center gap-2 text-xs text-gray-400">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>LangGraph Guardrails Active</span>
+              </div>
+              
+              <button 
+                type="submit" 
+                id="sendBtn"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-md shadow-indigo-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span>Send</span>
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </form>
+          <p class="text-[10px] text-gray-400 text-center mt-2">Press Enter to send, Shift+Enter for new line.</p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Right Drawer: Live Extracted Trip State -->
+    <aside id="stateDrawer" class="w-80 border-l border-gray-800/80 bg-[#0c121e]/95 flex flex-col shrink-0 transform translate-x-full transition-transform duration-300 absolute right-0 top-0 bottom-0 z-30 shadow-2xl">
+      <div class="p-4 border-b border-gray-800/60 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+          <i data-lucide="map-pin" class="w-4 h-4"></i>
+          <span>Live Extracted Trip State</span>
+        </div>
+        <button id="closeDrawerBtn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs" id="stateDrawerContent">
+        <div class="text-gray-400 text-center py-6">
+          No trip parameters extracted yet. Start chatting to extract trip details!
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Main Application Script -->
+  <script>
+    // Global App State
+    let currentUserId = "demo_user";
+    let currentThreadId = null;
+    let isProcessing = false;
+
+    // DOM Elements
+    const chatMessages = document.getElementById("chatMessages");
+    const welcomeView = document.getElementById("welcomeView");
+    const chatForm = document.getElementById("chatForm");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const userIdInput = document.getElementById("userIdInput");
+    const threadsList = document.getElementById("threadsList");
+    const newTripBtn = document.getElementById("newTripBtn");
+    const activityStatus = document.getElementById("activityStatus");
+    const activityStatusText = document.getElementById("activityStatusText");
+    const stateDrawer = document.getElementById("stateDrawer");
+    const toggleDrawerBtn = document.getElementById("toggleDrawerBtn");
+    const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+    const stateDrawerContent = document.getElementById("stateDrawerContent");
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Setup Marked JS Options
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+    });
+
+    // Auto-resize textarea
+    messageInput.addEventListener("input", () => {
+      messageInput.style.height = "auto";
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 160) + "px";
+    });
+
+    // Handle Enter key submit
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event("submit"));
+      }
+    });
+
+    // User ID Input change
+    userIdInput.addEventListener("change", () => {
+      currentUserId = userIdInput.value.trim() || "demo_user";
+      currentThreadId = null;
+      loadThreads();
+      resetChatArea();
+    });
+
+    // Drawer Toggles
+    toggleDrawerBtn.addEventListener("click", () => {
+      stateDrawer.classList.toggle("translate-x-full");
+    });
+    closeDrawerBtn.addEventListener("click", () => {
+      stateDrawer.classList.add("translate-x-full");
+    });
+
+    // New Trip Button
+    newTripBtn.addEventListener("click", () => {
+      currentThreadId = null;
+      resetChatArea();
+      renderThreadsList();
+    });
+
+    // Preset Prompt click
+    function usePresetPrompt(promptText) {
+      messageInput.value = promptText;
+      messageInput.focus();
+      messageInput.dispatchEvent(new Event("input"));
+    }
+
+    // Reset Chat Canvas
+    function resetChatArea() {
+      chatMessages.innerHTML = "";
+      chatMessages.appendChild(welcomeView);
+      welcomeView.classList.remove("hidden");
+      updateTripDetailsDrawer({});
+    }
+
+    // Load Threads for current user
+    async function loadThreads() {
+      threadsList.innerHTML = `<div class="p-4 text-center text-xs text-gray-500">Loading conversation history...</div>`;
+      try {
+        const res = await fetch(`/api/v1/users/${encodeURIComponent(currentUserId)}/threads`);
+        if (res.ok) {
+          const threads = await res.json();
+          renderThreadsList(threads);
+        } else {
+          threadsList.innerHTML = `<div class="p-3 text-xs text-rose-400">Failed to fetch threads</div>`;
+        }
+      } catch (err) {
+        console.error("Error loading threads:", err);
+        threadsList.innerHTML = `<div class="p-3 text-xs text-gray-500">No active connection</div>`;
+      }
+    }
+
+    // Render Threads List in Sidebar
+    function renderThreadsList(threads = []) {
+      threadsList.innerHTML = `<div class="text-xs font-semibold text-gray-400 px-3 py-2 uppercase tracking-wider">Your Travel Threads</div>`;
+      
+      if (threads.length === 0) {
+        threadsList.innerHTML += `<div class="p-3 text-xs text-gray-500 italic text-center">No previous trips found</div>`;
+        return;
+      }
+
+      threads.forEach((t) => {
+        const isActive = t.thread_id === currentThreadId;
+        const threadItem = document.createElement("div");
+        threadItem.className = `group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${
+          isActive 
+            ? "bg-indigo-600/20 border border-indigo-500/30 text-white font-medium" 
+            : "hover:bg-gray-800/60 text-gray-300"
+        }`;
+        
+        threadItem.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0 flex-1" onclick="switchThread('${t.thread_id}')">
+            <i data-lucide="${t.is_complete ? 'check-circle2' : 'plane'}" class="w-4 h-4 shrink-0 ${t.is_complete ? 'text-emerald-400' : 'text-indigo-400'}"></i>
+            <div class="truncate text-xs">
+              <div class="font-medium truncate">${t.title || 'Trip Session'}</div>
+              <div class="text-[10px] text-gray-400">${t.destination ? t.destination : 'In Progress'}</div>
+            </div>
+          </div>
+          <button onclick="deleteThread('${t.thread_id}', event)" class="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-rose-400 rounded transition">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        threadsList.appendChild(threadItem);
+      });
+      lucide.createIcons();
+    }
+
+    // Switch Active Thread
+    async function switchThread(threadId) {
+      if (isProcessing) return;
+      currentThreadId = threadId;
+      loadThreads();
+      
+      chatMessages.innerHTML = `<div class="text-center p-8 text-xs text-gray-400">Loading conversation history...</div>`;
+      
+      try {
+        const res = await fetch(`/api/v1/users/${encodeURIComponent(currentUserId)}/threads/${encodeURIComponent(threadId)}`);
+        if (res.ok) {
+          const detail = await res.json();
+          chatMessages.innerHTML = "";
+          
+          if (detail.messages && detail.messages.length > 0) {
+            welcomeView.classList.add("hidden");
+            detail.messages.forEach(msg => {
+              appendMessageBubble(msg.role, msg.content);
+            });
+          } else {
+            resetChatArea();
+          }
+
+          updateTripDetailsDrawer(detail.trip_details || {});
+        }
+      } catch (err) {
+        console.error("Error switching thread:", err);
+      }
+    }
+
+    // Delete Thread
+    async function deleteThread(threadId, e) {
+      e.stopPropagation();
+      if (!confirm("Are you sure you want to delete this trip thread?")) return;
+      
+      try {
+        const res = await fetch(`/api/v1/users/${encodeURIComponent(currentUserId)}/threads/${encodeURIComponent(threadId)}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          if (currentThreadId === threadId) {
+            currentThreadId = null;
+            resetChatArea();
+          }
+          loadThreads();
+        }
+      } catch (err) {
+        console.error("Error deleting thread:", err);
+      }
+    }
+
+    // Append Message Bubble to Feed
+    function appendMessageBubble(role, content) {
+      welcomeView.classList.add("hidden");
+      
+      const isUser = role === "user";
+      const wrapper = document.createElement("div");
+      wrapper.className = `flex gap-3 animate-fade-in-up ${isUser ? "justify-end" : "justify-start"}`;
+
+      const avatar = isUser ? `
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shrink-0 text-white font-bold text-xs shadow-md">
+          U
+        </div>
+      ` : `
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 border border-indigo-400/40 flex items-center justify-center shrink-0 text-white shadow-md">
+          <i data-lucide="bot" class="w-4.5 h-4.5"></i>
+        </div>
+      `;
+
+      const parsedMarkdown = isUser ? escapeHtml(content) : marked.parse(content);
+
+      const bubbleClass = isUser
+        ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl rounded-tr-none px-4 py-3 text-sm max-w-xl shadow-lg shadow-indigo-600/10"
+        : "glass-panel text-gray-200 rounded-2xl rounded-tl-none p-5 text-sm max-w-2xl prose-dark border border-gray-800 shadow-xl";
+
+      wrapper.innerHTML = isUser ? `
+        <div class="${bubbleClass}">${parsedMarkdown}</div>
+        ${avatar}
+      ` : `
+        ${avatar}
+        <div class="${bubbleClass}">${parsedMarkdown}</div>
+      `;
+
+      chatMessages.appendChild(wrapper);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      lucide.createIcons();
+    }
+
+    // Append HITL Approval Card
+    function appendHITLCard(summary) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "flex gap-3 justify-start animate-fade-in-up my-4";
+      
+      wrapper.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center shrink-0 text-amber-400">
+          <i data-lucide="alert-circle" class="w-4.5 h-4.5"></i>
+        </div>
+        
+        <div class="glass-panel border-amber-500/30 bg-amber-950/20 rounded-2xl rounded-tl-none p-5 max-w-2xl w-full text-sm">
+          <div class="flex items-center gap-2 text-amber-400 font-bold text-sm mb-2">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>Human-in-the-Loop Review Required</span>
+          </div>
+          
+          <p class="text-gray-300 text-xs mb-3">
+            Our specialized sub-agents have gathered preliminary flight & hotel proposals. Please review before we generate your full itinerary:
+          </p>
+
+          <div class="bg-gray-900/80 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-200/90 mb-4 prose-dark">
+            ${marked.parse(summary || "Options prepared. Ready for your review.")}
+          </div>
+
+          <!-- Action controls -->
+          <div id="hitlActionGroup" class="flex flex-col sm:flex-row gap-2">
+            <button onclick="submitHITLApproval(true)" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/20 transition">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <span>Approve & Generate Full Itinerary</span>
+            </button>
+            
+            <button onclick="toggleRevisionInput()" class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-semibold text-xs transition flex items-center justify-center gap-1.5">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Request Changes</span>
+            </button>
+          </div>
+
+          <!-- Revision Feedback Text Box (hidden by default) -->
+          <div id="revisionContainer" class="hidden mt-3 pt-3 border-t border-gray-800 space-y-2">
+            <textarea id="revisionFeedbackInput" rows="2" placeholder="Specify your changes (e.g. Find cheaper hotel options under $200/night)..." class="w-full bg-gray-900/90 border border-gray-700 rounded-xl p-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50"></textarea>
+            <button onclick="submitHITLApproval(false)" class="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs transition">
+              Submit Revision Feedback
+            </button>
+          </div>
+        </div>
+      `;
+
+      chatMessages.appendChild(wrapper);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      lucide.createIcons();
+    }
+
+    // Toggle Revision Input
+    function toggleRevisionInput() {
+      const container = document.getElementById("revisionContainer");
+      if (container) container.classList.toggle("hidden");
+    }
+
+    // Submit HITL Approval/Rejection
+    async function submitHITLApproval(approved) {
+      if (isProcessing) return;
+      
+      let feedback = "";
+      if (!approved) {
+        const feedbackInput = document.getElementById("revisionFeedbackInput");
+        feedback = feedbackInput ? feedbackInput.value.trim() : "";
+      }
+
+      // Update card UI status instantly
+      const actionGroup = document.getElementById("hitlActionGroup");
+      if (actionGroup) {
+        actionGroup.innerHTML = `
+          <div class="w-full p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>${approved ? "✅ Approved! Generating full day-by-day itinerary..." : "✏️ Revisions submitted! Updating travel options..."}</span>
+          </div>
+        `;
+      }
+      const revisionContainer = document.getElementById("revisionContainer");
+      if (revisionContainer) revisionContainer.classList.add("hidden");
+
+      setProcessingState(true, approved ? "Synthesizing full day-by-day itinerary..." : "Revising travel plan...");
+
+      try {
+        const res = await fetch("/api/v1/chat/resume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            thread_id: currentThreadId,
+            approved: approved,
+            feedback: feedback
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          handleApiResponse(data);
+        } else {
+          appendMessageBubble("assistant", "⚠️ Error resuming execution turn.");
+        }
+      } catch (err) {
+
+        console.error("Resume error:", err);
+        appendMessageBubble("assistant", "⚠️ Network error occurred while submitting feedback.");
+      } finally {
+        setProcessingState(false);
+      }
+    }
+
+    // Submit Chat Form Turn
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = messageInput.value.trim();
+      if (!message || isProcessing) return;
+
+      messageInput.value = "";
+      messageInput.style.height = "auto";
+
+      appendMessageBubble("user", message);
+      setProcessingState(true, "Consulting AviationStack, Tavily & Weather MCP...");
+
+      try {
+        const res = await fetch("/api/v1/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            thread_id: currentThreadId,
+            message: message
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          currentThreadId = data.thread_id;
+          handleApiResponse(data);
+          loadThreads();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          appendMessageBubble("assistant", `⚠️ **Error**: ${errData.detail || "Failed to execute trip turn."}`);
+        }
+      } catch (err) {
+        console.error("Chat error:", err);
+        appendMessageBubble("assistant", "⚠️ **Network Error**: Unable to connect to TripGPT backend server.");
+      } finally {
+        setProcessingState(false);
+      }
+    });
+
+    // Handle API Response Data
+    function handleApiResponse(data) {
+      if (data.reply) {
+        appendMessageBubble("assistant", data.reply);
+      }
+
+      if (data.awaiting_approval) {
+        appendHITLCard(data.summary_for_approval);
+      }
+
+      if (data.trip_details) {
+        updateTripDetailsDrawer(data.trip_details);
+      }
+    }
+
+    // Update Right Drawer Trip Details
+    function updateTripDetailsDrawer(details) {
+      if (!details || Object.keys(details).length === 0) {
+        stateDrawerContent.innerHTML = `
+          <div class="text-gray-500 text-center py-6 text-xs">
+            No trip parameters extracted yet. Start chatting to extract trip details!
+          </div>
+        `;
+        return;
+      }
+
+      const keys = [
+        { label: "Origin", val: details.origin, icon: "plane-takeoff" },
+        { label: "Destination", val: details.destination, icon: "map-pin" },
+        { label: "Duration", val: details.num_days ? `${details.num_days} Days` : null, icon: "calendar" },
+        { label: "Travelers", val: details.num_people ? `${details.num_people} Person(s)` : null, icon: "users" },
+        { label: "Budget", val: details.budget ? `$${details.budget}` : null, icon: "dollar-sign" },
+        { label: "Departure Date", val: details.start_date, icon: "clock" },
+      ];
+
+      let html = `<div class="space-y-3">`;
+
+      keys.forEach(k => {
+        html += `
+          <div class="p-2.5 rounded-xl bg-gray-900/80 border border-gray-800 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-gray-400">
+              <i data-lucide="${k.icon}" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span>${k.label}</span>
+            </div>
+            <span class="font-semibold text-white">${k.val || '<span class="text-gray-500 font-normal">Not specified</span>'}</span>
+          </div>
+        `;
+      });
+
+      if (details.missing_fields && details.missing_fields.length > 0) {
+        html += `
+          <div class="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div class="text-amber-400 font-semibold text-xs mb-1">Missing Parameters:</div>
+            <div class="flex flex-wrap gap-1.5 mt-1">
+              ${details.missing_fields.map(f => `<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] uppercase font-bold">${f}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      stateDrawerContent.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    // Set UI Processing / Loading state
+    function setProcessingState(processing, text = "") {
+      isProcessing = processing;
+      sendBtn.disabled = processing;
+      messageInput.disabled = processing;
+
+      if (processing) {
+        activityStatusText.innerText = text;
+        activityStatus.classList.remove("hidden");
+      } else {
+        activityStatus.classList.add("hidden");
+      }
+    }
+
+    // Helper to escape HTML string
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Initial load
+    loadThreads();
+  </script>
+</body>
+</html>

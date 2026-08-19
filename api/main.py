@@ -11,6 +11,10 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 from api.routers import chat, threads
 from api.dependencies import get_trip_graph
 from tools.mcp_client import cleanup_mcp
@@ -60,16 +64,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files directory if it exists
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # Include API Routers
 app.include_router(chat.router)
 app.include_router(threads.router)
 
 
-@app.get("/")
+@app.get("/", response_class=FileResponse)
 async def root():
-    """Welcome endpoint for API verification."""
+    """Serves the main TripGPT Chatbot UI application."""
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {
         "message": "Welcome to TripGPT Multi-Agent Travel Planner API! ✈️🌍",
         "documentation": "/docs",
         "status": "online",
     }
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    """Health check endpoint for Render monitoring."""
+    return {"status": "healthy", "service": "TripGPT"}
+

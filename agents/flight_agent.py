@@ -139,12 +139,16 @@ class FlightAgent(BaseAgent):
             f"Trip context: {origin} to {destination}, starting {start_date}, for {num_people} passenger(s).\n\n"
             f"Flight Data Snippets (from MCP Server):\n{truncated_aviation}\n\n"
             f"Search Snippets (from MCP Server):\n{truncated_tavily}\n\n"
-            f"Synthesize 2-3 realistic flight options, typical airlines, duration, estimated prices, "
-            f"and airport pickup advice for this journey. Keep output concise (under 300 words)."
+            f"FORMAT INSTRUCTIONS:\n"
+            f"- Do NOT use markdown tables or headings (# or ##).\n"
+            f"- Output 2-3 realistic flight options as clean bullet points starting with 🛫.\n"
+            f"- For each option include: Airline, departure/arrival times, estimated round-trip price, and 1 short transport tip.\n"
+            f"- Keep total response under 150 words."
         )
 
         response = self.llm.invoke([SystemMessage(content=prompt)])
         flight_summary = str(response.content)
 
         return {"flight_data": flight_summary}
+
 

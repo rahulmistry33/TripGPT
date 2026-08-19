@@ -51,13 +51,15 @@ class WeatherAgent(BaseAgent):
             f"You are a specialized Weather & Climate Travel Agent.\n"
             f"Trip Context: Destination={destination}, Start Date={start_date}, Duration={num_days} days.\n\n"
             f"Live Weather Data (from Weather MCP Server):\n{truncated_weather}\n\n"
-            f"Synthesize a concise travel weather guide (under 300 words) including:\n"
-            f"1. **Expected Climate & Temperature Range** during the travel period.\n"
-            f"2. **Essential Packing List & Clothing Advice** (e.g., umbrella, rain gear, sun protection, layers, footwear).\n"
-            f"3. **Sightseeing & Weather Advisories** (e.g., best time of day for outdoor exploration vs indoor activities)."
+            f"FORMAT INSTRUCTIONS:\n"
+            f"- Do NOT use top-level markdown headings (# or ##).\n"
+            f"- Output 2-3 concise bullet points starting with 🌤️ and 🎒.\n"
+            f"- Include: Expected temperature range/climate, essential packing advice, and best time of day for outdoor exploration.\n"
+            f"- Keep total response under 100 words."
         )
 
         response = self.llm.invoke([SystemMessage(content=prompt)])
         weather_summary = str(response.content)
 
         return {"weather_data": weather_summary}
+

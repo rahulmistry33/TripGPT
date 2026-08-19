@@ -11,10 +11,16 @@ from api.main import app
 client = TestClient(app)
 
 def test_api_workflow():
-    print("\n--- 1. Testing Root Endpoint GET / ---")
+    print("\n--- 1. Testing Root UI & Health Endpoints ---")
     res = client.get("/")
     assert res.status_code == 200
-    print("Response:", res.json())
+    assert "TripGPT" in res.text
+    print("Root Chatbot UI loaded successfully.")
+
+    res_health = client.get("/api/v1/health")
+    assert res_health.status_code == 200
+    print("Health Status:", res_health.json())
+
 
     user_id = "test_user_777"
 

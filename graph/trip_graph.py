@@ -64,19 +64,22 @@ class TripGraph:
         Resumes when Command(resume=...) is passed by the client/user.
         """
         details = state.get("trip_details", {})
-        flight_preview = state.get("flight_data", "No flight data")[:200]
-        hotel_preview = state.get("hotel_data", "No hotel data")[:200]
-        weather_preview = state.get("weather_data", "No weather data")[:150]
+        
+        flight_data = str(state.get("flight_data", "Flight research complete.")).strip()
+        hotel_data = str(state.get("hotel_data", "Hotel research complete.")).strip()
+        weather_data = str(state.get("weather_data", "Weather forecast fetched.")).strip()
 
         summary = (
-            f"📋 **Human Approval Required**: Flight, Hotel, & Weather research complete.\n"
-            f"- **Destination:** {details.get('destination', 'N/A')} ({details.get('num_days', 'N/A')} days, {details.get('num_people', 'N/A')} people)\n"
-            f"- **Budget:** {details.get('budget', 'N/A')} | **Type:** {details.get('trip_type', 'N/A')}\n"
-            f"- **Flight Options:** {flight_preview}...\n"
-            f"- **Hotel Options:** {hotel_preview}...\n"
-            f"- **Weather Summary:** {weather_preview}...\n\n"
-            f"Please approve to finalize your full day-by-day itinerary, or provide feedback for revisions."
+            f"📋 **Human Review Checkpoint**: Preliminary research complete.\n\n"
+            f"📍 **Destination Details:** {details.get('destination', 'N/A')} ({details.get('num_days', 'N/A')} days, {details.get('num_people', 'N/A')} travelers)\n"
+            f"💰 **Budget & Type:** {details.get('budget', 'N/A')} | {details.get('trip_type', 'N/A')}\n\n"
+            f"✈️ **Flight Options:**\n{flight_data}\n\n"
+            f"🏨 **Hotel Options:**\n{hotel_data}\n\n"
+            f"🌤️ **Weather & Climate:**\n{weather_data}\n\n"
+            f"👉 *Click **Approve & Generate Full Itinerary** below to build your day-by-day itinerary, or **Request Changes** to revise options.*"
         )
+
+
 
         # Trigger native LangGraph interrupt
         interrupt_payload = {

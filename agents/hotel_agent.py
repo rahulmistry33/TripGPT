@@ -55,13 +55,16 @@ class HotelAgent(BaseAgent):
             f"Trip Context: Destination={destination}, Duration={num_days} days, "
             f"Travelers={num_people}, Budget Tier={budget}, Type={trip_type}.\n\n"
             f"Search Snippets (from MCP Server):\n{truncated_results}\n\n"
-            f"Synthesize 3 distinct hotel/stay options matching this budget and trip style.\n"
-            f"For each include: Name, Location, estimated price per night, and key highlights.\n"
-            f"Keep output concise (under 300 words)."
+            f"FORMAT INSTRUCTIONS:\n"
+            f"- Do NOT use markdown tables or headings (# or ##).\n"
+            f"- Output 3 distinct stay options as clean bullet points starting with 🏨.\n"
+            f"- For each option include: Hotel Name, Neighborhood/Location, estimated price per night, and key highlight.\n"
+            f"- Keep total response under 150 words."
         )
 
         response = self.llm.invoke([SystemMessage(content=prompt)])
         hotel_summary = str(response.content)
 
         return {"hotel_data": hotel_summary}
+
 

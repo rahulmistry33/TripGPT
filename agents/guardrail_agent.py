@@ -44,6 +44,7 @@ class GuardrailAgent(BaseAgent):
             return {"passed": True, "violations": [], "warning_message": None}
 
         system_prompt = (
+
             "You are an AI Safety & Domain Guardrail Evaluator for an AI Trip Planning Assistant ('trip-gpt').\n"
             "Your job is to analyze the user's latest input and current trip parameters to decide if the request should be processed.\n\n"
             "EVALUATION CRITERIA:\n"
@@ -64,9 +65,12 @@ class GuardrailAgent(BaseAgent):
         try:
             eval_result: GuardrailResult = self.evaluator.invoke(prompt_messages)
             passed = eval_result.is_allowed
-            violations = eval_result.violations
+            violations = eval_result.violations or []
+            if not passed and not violations:
+                violations = ["Out-of-domain request or safety policy violation"]
             warning_msg = eval_result.refusal_message
         except Exception as e:
+
             # Fallback if structured output fails: default to allowing valid messages
             passed = True
             violations = []
